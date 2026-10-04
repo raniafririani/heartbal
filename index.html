@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HEARTBAL — Sakit sedikit? Mulai dari alam.</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Figtree:wght@400;500;600&display=swap">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#FFFFFF;--surface:#FFFFFF;--ink:#293379;--muted:#596088;--forest:#607829;--sage:#A6AF32;--leaf:#E3E8B4;--tint:#F5F7E6;--turmeric:#E5A300;--warn:#EE7302;--on-forest:#FFFFFF;--heart:#B81817;--on-heart:#FFFFFF;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#12162B;--surface:#1B2140;--ink:#F1F3E8;--muted:#B3B8D6;--forest:#C4CC52;--sage:#A6AF32;--leaf:#2A3260;--tint:#232A52;--turmeric:#E5A300;--warn:#F59A45;--on-forest:#12162B;--heart:#F0645C;--on-heart:#12162B;}}
+:root[data-theme="dark"]{
+  --bg:#12162B;--surface:#1B2140;--ink:#F1F3E8;--muted:#B3B8D6;--forest:#C4CC52;--sage:#A6AF32;--leaf:#2A3260;--tint:#232A52;--turmeric:#E5A300;--warn:#F59A45;--on-forest:#12162B;--heart:#F0645C;--on-heart:#12162B;}
+html{scroll-padding-top:env(safe-area-inset-top,0px);scroll-behavior:smooth}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Figtree,system-ui,sans-serif;line-height:1.6;font-size:17px}
+h1,h2,h3{font-family:Fraunces,Georgia,serif;line-height:1.12;margin:0}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--turmeric);outline-offset:3px}
+.wrap{max-width:1040px;margin:0 auto;padding:0 22px}
+header{display:flex;align-items:center;justify-content:space-between;padding:18px 0}
+.logo{font-family:Fraunces,serif;font-weight:700;font-size:1.35rem;color:var(--heart);text-decoration:none;display:flex;align-items:center;gap:9px}
+.logo svg{width:28px;height:28px}
+.btn{display:inline-block;background:var(--heart);color:var(--on-heart);padding:13px 24px;border-radius:999px;font-weight:600;text-decoration:none;border:0;font:inherit;font-weight:600;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--forest);border:1.5px solid var(--forest)}
+.hero{display:grid;grid-template-columns:1.05fr .95fr;gap:44px;align-items:center;padding:34px 0 70px}
+.hero h1{font-size:clamp(2.4rem,6vw,3.9rem);color:var(--forest);letter-spacing:-.01em}
+.hero p.lead{color:var(--muted);max-width:30em;margin:20px 0 28px;font-size:1.08rem}
+.cta{display:flex;gap:12px;flex-wrap:wrap}
+.note{font-size:.88rem;color:var(--muted);margin-top:16px}
+.chat{background:var(--surface);border-radius:28px 28px 28px 6px;padding:20px;box-shadow:0 18px 40px -22px rgba(41,51,121,.35);border:1px solid var(--leaf)}
+.msg{padding:11px 15px;border-radius:18px;margin:0 0 10px;max-width:88%;font-size:.95rem}
+.me{background:var(--leaf);margin-left:auto;border-bottom-right-radius:5px}
+.ai{background:var(--tint);border-bottom-left-radius:5px}
+.ai b{color:var(--heart)}
+.ai ul{margin:6px 0 0;padding-left:18px}
+.stop{border-left:4px solid var(--turmeric);padding-left:11px;margin-top:8px;font-size:.88rem;color:var(--muted)}
+section{padding:60px 0;border-top:1px solid var(--leaf)}
+section h2{font-size:clamp(1.7rem,4vw,2.4rem);color:var(--forest);max-width:18em}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:34px;counter-reset:s}
+.step{counter-increment:s;padding-top:14px;border-top:3px solid var(--sage)}
+.step::before{content:counter(s);font-family:Fraunces,serif;font-size:1.9rem;color:var(--heart)}
+.step h3{font-size:1.25rem;margin:4px 0 6px}
+.step p{margin:0;color:var(--muted)}
+.safe{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:30px}
+.safe ul{margin:0;padding:0;list-style:none}
+.safe li{padding:10px 0 10px 28px;position:relative;border-bottom:1px solid var(--leaf)}
+.safe li::before{content:"";position:absolute;left:4px;top:19px;width:10px;height:10px;border-radius:50% 0 50% 0;background:var(--sage)}
+.safe .red li::before{background:var(--warn)}
+.safe h3{font-size:1.15rem;margin-bottom:6px}
+footer{background:var(--forest);color:var(--on-forest);padding:34px 0;margin-top:30px;font-size:.9rem}
+footer p{margin:0 0 8px;max-width:46em}
+@media(max-width:780px){.hero,.safe{grid-template-columns:1fr}.steps{grid-template-columns:1fr}.hero{padding-bottom:44px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="logo" href="#"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 28C6 21 3 14 7 9.5c3-3 7-2 9 1.5 2-3.500 6-4.500 9-1.500C29 14 26 21 16 28Z" fill="currentColor"/><path d="M16 26V14m0 5 4-4m-4 2-3-3" stroke="var(--bg)" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg>HEARTBAL</a>
+    <a class="btn ghost" href="#mulai">Masuk</a>
+  </header>
+
+  <main>
+  <div class="hero">
+    <div>
+      <h1><span style="color:var(--heart)">Sakit sedikit?</span> Mulai dari alam.</h1>
+      <p class="lead">Asisten AI yang membantu meredakan keluhan ringan dengan ramuan herbal dari dapur sendiri, dan memberi tahu kapan saatnya ke dokter.</p>
+      <div class="cta">
+        <a class="btn" id="mulai" href="chat.html">Mulai konsultasi</a>
+        <a class="btn ghost" href="#cara">Lihat cara kerjanya</a>
+      </div>
+      <p class="note">Gratis dicoba. Untuk pertolongan pertama, bukan pengganti dokter.</p>
+    </div>
+    <div class="chat" role="img" aria-label="Contoh percakapan: pengguna mengeluh sakit perut, HEARTBAL menanyakan tanda bahaya lalu menyarankan wedang jahe">
+      <p class="msg me">Hari ini perutku sakit, ada solusi?</p>
+      <p class="msg ai">Aku bantu ya. Tapi sebelum itu aku mau make sure 3 hal dulu: nyerinya makin parah? muntah terus? sedang hamil atau minum obat rutin?</p>
+      <p class="msg me">Nyeri ringan, nggak muntah, nggak hamil.</p>
+      <div class="msg ai"><b>Coba wedang jahe hangat.</b>
+        <ul><li>2 ruas jahe digeprek, rebus 10 menit</li><li>Minum perlahan, 1–2 gelas hari ini</li></ul>
+        <div class="stop">Kalau nyeri bertambah atau belum membaik dalam 24 jam, periksa ke dokter.</div>
+      </div>
+    </div>
+  </div>
+
+  <section id="cara">
+    <h2>Tiga langkah, tanpa antre dan tanpa tebak-tebakan</h2>
+    <div class="steps">
+      <div class="step"><h3>Ceritakan keluhanmu</h3><p>Tulis seperti ngobrol biasa. Tidak perlu istilah medis.</p></div>
+      <div class="step"><h3>Jawab pertanyaan singkat</h3><p>HEARTBAL memeriksa tanda bahaya dulu, supaya sarannya aman untukmu.</p></div>
+      <div class="step"><h3>Dapat ramuan dan batasnya</h3><p>Bahan, takaran, cara membuat, dan kapan harus berhenti lalu ke dokter.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Kami tahu kapan herbal saja tidak cukup</h2>
+    <div class="safe">
+      <div><h3>Yang bisa dibantu</h3>
+        <ul><li>Perut kembung atau mual ringan</li><li>Tenggorokan gatal dan batuk ringan</li><li>Masuk angin dan badan pegal</li><li>Sulit tidur karena lelah</li></ul></div>
+      <div class="red"><h3>Langsung ke dokter atau IGD</h3>
+        <ul><li>Nyeri hebat atau terus memburuk</li><li>Muntah terus atau BAB berdarah</li><li>Demam tinggi lebih dari 2 hari</li><li>Hamil, bayi, atau punya penyakit kronis</li></ul></div>
+    </div>
+  </section>
+  </main>
+</div>
+<footer>
+  <div class="wrap">
+    <p><b>HEARTBAL</b> memberi saran perawatan mandiri, bukan diagnosis atau resep dokter.</p>
+    <p>Herbal bisa berinteraksi dengan obat yang sedang kamu minum. Jika kondisi tidak membaik, segera hubungi tenaga kesehatan.</p>
+  </div>
+</footer>
+</body>
+</html>

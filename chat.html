@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Konsultasi — HEARTBAL</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700&family=Figtree:wght@400;500;600&display=swap">
+<style>
+:root{
+  box-sizing:border-box;
+  --bg:#FFFFFF;--surface:#FFFFFF;--ink:#293379;--muted:#596088;--forest:#607829;--sage:#A6AF32;--leaf:#E3E8B4;--tint:#F5F7E6;--turmeric:#E5A300;--on-forest:#FFFFFF;--heart:#B81817;--on-heart:#FFFFFF;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#12162B;--surface:#1B2140;--ink:#F1F3E8;--muted:#B3B8D6;--forest:#C4CC52;--leaf:#2A3260;--tint:#232A52;--on-forest:#12162B;--heart:#F0645C;--on-heart:#12162B;}}
+*,*::before,*::after{box-sizing:inherit}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:Figtree,system-ui,sans-serif;font-size:16.5px;line-height:1.55}
+:focus-visible{outline:3px solid var(--turmeric);outline-offset:2px}
+.app{height:100%;display:flex;flex-direction:column;max-width:720px;margin:0 auto;padding-top:env(safe-area-inset-top,0px)}
+header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--leaf)}
+.logo{font-family:Fraunces,serif;font-weight:700;font-size:1.25rem;color:var(--heart);text-decoration:none}
+.back{font-size:.9rem;color:var(--forest);text-decoration:none;font-weight:600}
+.warn{background:var(--tint);border-left:4px solid var(--turmeric);margin:12px 18px 0;padding:9px 12px;font-size:.85rem;color:var(--muted)}
+#log{flex:1;overflow-y:auto;padding:16px 18px}
+.msg{padding:11px 15px;border-radius:18px;margin:0 0 12px;max-width:88%;white-space:pre-wrap;overflow-wrap:anywhere}
+.me{background:var(--leaf);color:var(--ink);margin-left:auto;border-bottom-right-radius:5px}
+.ai{background:var(--tint);border-bottom-left-radius:5px}
+.ai b{color:var(--heart)}
+.err{background:transparent;border:1.5px solid var(--heart);color:var(--heart)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 12px}
+.chip{border:1.5px solid var(--forest);background:transparent;color:var(--forest);padding:8px 14px;border-radius:999px;font:inherit;font-size:.92rem;font-weight:600;cursor:pointer}
+form{display:flex;gap:10px;padding:12px 18px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--leaf);background:var(--bg)}
+textarea{flex:1;resize:none;font:inherit;color:var(--ink);background:var(--surface);border:1.5px solid var(--leaf);border-radius:16px;padding:11px 14px;max-height:120px}
+button.send{background:var(--heart);color:var(--on-heart);border:0;border-radius:999px;padding:0 22px;font:inherit;font-weight:600;cursor:pointer}
+button:disabled{opacity:.5;cursor:default}
+</style>
+</head>
+<body>
+<div class="app">
+  <header><a class="logo" href="index.html">HEARTBAL</a><a class="back" href="index.html">Beranda</a></header>
+  <div class="warn">Untuk keluhan ringan dan pertolongan pertama, bukan pengganti dokter. Kondisi darurat: hubungi 119 atau ke IGD.</div>
+  <div id="log" aria-live="polite">
+    <div class="msg ai">Halo, aku HEARTBAL. Ceritakan keluhanmu hari ini, nanti aku bantu cek dulu sebelum kasih saran herbal.</div>
+    <div class="chips" id="chips">
+      <button class="chip" type="button">Perutku sakit</button>
+      <button class="chip" type="button">Batuk dan tenggorokan gatal</button>
+      <button class="chip" type="button">Masuk angin</button>
+    </div>
+  </div>
+  <form id="form">
+    <textarea id="input" rows="1" maxlength="1500" placeholder="Tulis keluhanmu..." aria-label="Keluhan"></textarea>
+    <button class="send" id="send" type="submit">Kirim</button>
+  </form>
+</div>
+<script>
+const log = document.getElementById('log');
+const form = document.getElementById('form');
+const input = document.getElementById('input');
+const send = document.getElementById('send');
+const chips = document.getElementById('chips');
+const history = []; // hanya percakapan nyata: {role, content}
+
+function render(text){
+  const esc = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return esc.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+}
+function add(role, text, cls){
+  const d = document.createElement('div');
+  d.className = 'msg ' + (role === 'user' ? 'me' : 'ai') + (cls ? ' ' + cls : '');
+  if (role === 'user') d.textContent = text; else d.innerHTML = render(text);
+  log.appendChild(d);
+  log.scrollTop = log.scrollHeight;
+  return d;
+}
+async function ask(text){
+  if (!text.trim()) return;
+  chips.remove();
+  add('user', text);
+  history.push({ role: 'user', content: text });
+  input.value = ''; send.disabled = true; input.disabled = true;
+  const wait = add('assistant', 'Sebentar ya, aku pikirkan dulu...');
+  try {
+    const r = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: history })
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Gagal');
+    wait.innerHTML = render(data.reply);
+    history.push({ role: 'assistant', content: data.reply });
+  } catch (e) {
+    wait.className = 'msg ai err';
+    wait.textContent = 'Maaf, ada gangguan. Coba kirim lagi sebentar lagi.';
+    history.pop(); // buang pesan yang gagal supaya bisa dikirim ulang
+  }
+  send.disabled = false; input.disabled = false; input.focus();
+  log.scrollTop = log.scrollHeight;
+}
+form.addEventListener('submit', e => { e.preventDefault(); ask(input.value); });
+input.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(input.value); }
+});
+chips.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => ask(c.textContent)));
+</script>
+</body>
+</html>
