@@ -19,7 +19,7 @@ body{background:var(--bg);color:var(--ink);font-family:Figtree,system-ui,sans-se
 .app{height:100%;display:flex;flex-direction:column;max-width:720px;margin:0 auto;padding-top:env(safe-area-inset-top,0px)}
 header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--leaf)}
 .logo{font-family:Fraunces,serif;font-weight:700;font-size:1.25rem;color:var(--heart);text-decoration:none}
-.back{font-size:.9rem;color:var(--forest);text-decoration:none;font-weight:600}
+.nav{display:flex;gap:14px;align-items:center}button.back{background:none;border:0;font-family:inherit;cursor:pointer}.back{font-size:.9rem;color:var(--forest);text-decoration:none;font-weight:600}
 .warn{background:var(--tint);border-left:4px solid var(--turmeric);margin:12px 18px 0;padding:9px 12px;font-size:.85rem;color:var(--muted)}
 #log{flex:1;overflow-y:auto;padding:16px 18px}
 .msg{padding:11px 15px;border-radius:18px;margin:0 0 12px;max-width:88%;white-space:pre-wrap;overflow-wrap:anywhere}
@@ -37,8 +37,13 @@ button:disabled{opacity:.5;cursor:default}
 </head>
 <body>
 <div class="app">
-  <header><a class="logo" href="index.html">HEARTBAL</a><a class="back" href="index.html">Beranda</a></header>
-  <div class="warn">Untuk keluhan ringan dan pertolongan pertama, bukan pengganti dokter. Kondisi darurat: hubungi 119 atau ke IGD.</div>
+  <header>
+    <a class="logo" href="index.html">HEARTBAL</a>
+    <div class="nav">
+      <a class="back" href="index.html">Beranda</a>
+      <a class="back" href="login.html">Masuk</a>
+    </div>
+  </header>
   <div id="log" aria-live="polite">
     <div class="msg ai">Halo, aku HEARTBAL. Ceritakan keluhanmu hari ini, nanti aku bantu cek dulu sebelum kasih saran herbal.</div>
     <div class="chips" id="chips">
@@ -52,13 +57,16 @@ button:disabled{opacity:.5;cursor:default}
     <button class="send" id="send" type="submit">Kirim</button>
   </form>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
 <script>
+const sb = supabase.createClient(window.HEARTBAL_CONFIG.SUPABASE_URL, window.HEARTBAL_CONFIG.SUPABASE_ANON_KEY);
 const log = document.getElementById('log');
 const form = document.getElementById('form');
 const input = document.getElementById('input');
 const send = document.getElementById('send');
 const chips = document.getElementById('chips');
-const history = []; // hanya percakapan nyata: {role, content}
+const history = [];
 
 function render(text){
   const esc = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -72,8 +80,19 @@ function add(role, text, cls){
   log.scrollTop = log.scrollHeight;
   return d;
 }
+async function init(){
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { return; } // Jangan paksa redirect dulu biar bisa dipencet tombol masuknya
+  const { data, error } = await sb.from('messages').select('role,content').order('id', { ascending: false }).limit(40);
+  if (!error && data && data.length) {
+    data.reverse().forEach(m => { history.push({ role: m.role, content: m.content }); add(m.role, m.content); });
+    chips.remove();
+  }
+}
 async function ask(text){
   if (!text.trim()) return;
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { location.href = 'login.html'; return; }
   chips.remove();
   add('user', text);
   history.push({ role: 'user', content: text });
@@ -82,26 +101,42 @@ async function ask(text){
   try {
     const r = await fetch('/api/chat', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
       body: JSON.stringify({ messages: history })
     });
+    if (r.status === 401) { location.href = 'login.html'; return; }
     const data = await r.json();
     if (!r.ok) throw new Error(data.error || 'Gagal');
     wait.innerHTML = render(data.reply);
     history.push({ role: 'assistant', content: data.reply });
+    await sb.from('messages').insert([{ role: 'user', content: text }, { role: 'assistant', content: data.reply }]);
   } catch (e) {
     wait.className = 'msg ai err';
     wait.textContent = 'Maaf, ada gangguan. Coba kirim lagi sebentar lagi.';
-    history.pop(); // buang pesan yang gagal supaya bisa dikirim ulang
+    history.pop();
   }
   send.disabled = false; input.disabled = false; input.focus();
   log.scrollTop = log.scrollHeight;
 }
 form.addEventListener('submit', e => { e.preventDefault(); ask(input.value); });
-input.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(input.value); }
-});
+input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(input.value); } });
 chips.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => ask(c.textContent)));
+
+// Safe check biar gak crash kalau tombol id 'out' atau 'clear' gak ada di HTML
+const outBtn = document.getElementById('out');
+if (outBtn) {
+  outBtn.addEventListener('click', async () => { await sb.auth.signOut(); location.href = 'login.html'; });
+}
+const clearBtn = document.getElementById('clear');
+if (clearBtn) {
+  clearBtn.addEventListener('click', async () => {
+    if (!confirm('Hapus semua riwayat percakapanmu? Ini tidak bisa dibatalkan.')) return;
+    await sb.from('messages').delete().gt('id', 0);
+    location.reload();
+  });
+}
+
+init();
 </script>
 </body>
 </html>
