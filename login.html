@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Masuk — HEARTBAL</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700&family=Figtree:wght@400;500;600&display=swap">
+<style>
+:root{
+  box-sizing:border-box;
+  --bg:#FFFFFF;--surface:#FFFFFF;--ink:#293379;--muted:#596088;--forest:#607829;--sage:#A6AF32;--leaf:#E3E8B4;--tint:#F5F7E6;--turmeric:#E5A300;--heart:#B81817;--on-heart:#FFFFFF;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#12162B;--surface:#1B2140;--ink:#F1F3E8;--muted:#B3B8D6;--forest:#C4CC52;--leaf:#2A3260;--tint:#232A52;--heart:#F0645C;--on-heart:#12162B;}}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:Figtree,system-ui,sans-serif;font-size:16.5px;line-height:1.55;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+:focus-visible{outline:3px solid var(--turmeric);outline-offset:2px}
+.wrap{max-width:420px;margin:0 auto;padding:36px 22px}
+.logo{font-family:Fraunces,serif;font-weight:700;font-size:1.5rem;color:var(--heart);text-decoration:none}
+h1{font-family:Fraunces,serif;font-size:2rem;line-height:1.15;color:var(--forest);margin:28px 0 6px}
+.sub{color:var(--muted);margin:0 0 22px}
+.tabs{display:flex;gap:8px;margin-bottom:18px}
+.tab{flex:1;padding:10px;border-radius:999px;border:1.5px solid var(--forest);background:transparent;color:var(--forest);font:inherit;font-weight:600;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--forest);color:var(--bg)}
+label{display:block;font-weight:600;font-size:.92rem;margin:14px 0 6px}
+input{width:100%;font:inherit;color:var(--ink);background:var(--surface);border:1.5px solid var(--leaf);border-radius:14px;padding:12px 14px}
+button.go{width:100%;margin-top:20px;background:var(--heart);color:var(--on-heart);border:0;border-radius:999px;padding:14px;font:inherit;font-weight:600;cursor:pointer}
+button:disabled{opacity:.5;cursor:default}
+#msg{margin-top:16px;padding:10px 14px;border-radius:12px;font-size:.92rem;display:none}
+#msg.err{display:block;border:1.5px solid var(--heart);color:var(--heart)}
+#msg.ok{display:block;background:var(--tint);border-left:4px solid var(--turmeric)}
+.note{font-size:.85rem;color:var(--muted);margin-top:22px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="logo" href="index.html">HEARTBAL</a>
+  <h1 id="title">Selamat datang kembali</h1>
+  <p class="sub">Masuk supaya riwayat konsultasimu tersimpan dan hanya bisa dilihat olehmu.</p>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" id="tab-in" role="tab" aria-selected="true" type="button">Masuk</button>
+    <button class="tab" id="tab-up" role="tab" aria-selected="false" type="button">Daftar</button>
+  </div>
+
+  <form id="form">
+    <label for="email">Email</label>
+    <input id="email" type="email" autocomplete="email" required>
+    <label for="pw">Kata sandi</label>
+    <input id="pw" type="password" minlength="6" autocomplete="current-password" required>
+    <button class="go" id="go" type="submit">Masuk</button>
+  </form>
+  <div id="msg" role="status"></div>
+  <p class="note">HEARTBAL memberi saran perawatan mandiri, bukan pengganti dokter. Percakapanmu disimpan agar bisa dibuka lagi, dan bisa kamu hapus kapan saja.</p>
+</div>
+
+<!-- Tambahkan crossorigin="anonymous" agar jika ada error dari CDN bisa terbaca jelas di console -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
+<script src="config.js"></script>
+<script>
+let sb = null;
+
+// Pengecekan aman konfigurasi Supabase
+if (window.HEARTBAL_CONFIG && window.HEARTBAL_CONFIG.SUPABASE_URL && window.HEARTBAL_CONFIG.SUPABASE_ANON_KEY) {
+  sb = supabase.createClient(window.HEARTBAL_CONFIG.SUPABASE_URL, window.HEARTBAL_CONFIG.SUPABASE_ANON_KEY);
+} else {
+  console.error("Konfigurasi Supabase tidak ditemukan. Pastikan file config.js sudah ter-upload dengan benar.");
+}
+
+const form = document.getElementById('form'), msg = document.getElementById('msg');
+const go = document.getElementById('go'), pw = document.getElementById('pw');
+let mode = 'in';
+
+function setMode(m){
+  mode = m;
+  document.getElementById('tab-in').setAttribute('aria-selected', m === 'in');
+  document.getElementById('tab-up').setAttribute('aria-selected', m === 'up');
+  go.textContent = m === 'in' ? 'Masuk' : 'Buat akun';
+  document.getElementById('title').textContent = m === 'in' ? 'Selamat datang kembali' : 'Buat akun HEARTBAL';
+  pw.autocomplete = m === 'in' ? 'current-password' : 'new-password';
+  msg.className = ''; msg.textContent = '';
+}
+document.getElementById('tab-in').onclick = () => setMode('in');
+document.getElementById('tab-up').onclick = () => setMode('up');
+
+function show(type, text){ msg.className = type; msg.textContent = text; }
+
+form.addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!sb) {
+    show('err', 'Gagal terhubung ke server. Cek file config.js.');
+    return;
+  }
+  go.disabled = true; msg.className = '';
+  const email = document.getElementById('email').value.trim();
+  const password = pw.value;
+  try {
+    if (mode === 'in') {
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      location.href = 'chat.html';
+    } else {
+      const { data, error } = await sb.auth.signUp({ email, password });
+      if (error) throw error;
+      if (data.session) location.href = 'chat.html';
+      else show('ok', 'Akun dibuat. Cek email-mu untuk konfirmasi, lalu masuk.');
+    }
+  } catch (err) {
+    const t = (err.message || '').toLowerCase();
+    if (t.includes('invalid login')) show('err', 'Email atau kata sandi salah.');
+    else if (t.includes('already')) show('err', 'Email ini sudah terdaftar. Coba masuk.');
+    else if (t.includes('password')) show('err', 'Kata sandi minimal 6 karakter.');
+    else if (t.includes('confirm')) show('err', 'Email belum dikonfirmasi. Cek kotak masukmu.');
+    else show('err', 'Gagal: ' + (err.message || 'Coba lagi sebentar lagi.'));
+  }
+  go.disabled = false;
+});
+
+if (sb) {
+  sb.auth.getSession().then(({ data }) => { if (data && data.session) location.href = 'chat.html'; });
+}
+</script>
+</body>
+</html>
