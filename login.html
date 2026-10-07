@@ -54,19 +54,10 @@ button:disabled{opacity:.5;cursor:default}
   <p class="note">HEARTBAL memberi saran perawatan mandiri, bukan pengganti dokter. Percakapanmu disimpan agar bisa dibuka lagi, dan bisa kamu hapus kapan saja.</p>
 </div>
 
-<!-- Tambahkan crossorigin="anonymous" agar jika ada error dari CDN bisa terbaca jelas di console -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script>
-let sb = null;
-
-// Pengecekan aman konfigurasi Supabase
-if (window.HEARTBAL_CONFIG && window.HEARTBAL_CONFIG.SUPABASE_URL && window.HEARTBAL_CONFIG.SUPABASE_ANON_KEY) {
-  sb = supabase.createClient(window.HEARTBAL_CONFIG.SUPABASE_URL, window.HEARTBAL_CONFIG.SUPABASE_ANON_KEY);
-} else {
-  console.error("Konfigurasi Supabase tidak ditemukan. Pastikan file config.js sudah ter-upload dengan benar.");
-}
-
+const sb = supabase.createClient(window.HEARTBAL_CONFIG.SUPABASE_URL, window.HEARTBAL_CONFIG.SUPABASE_ANON_KEY);
 const form = document.getElementById('form'), msg = document.getElementById('msg');
 const go = document.getElementById('go'), pw = document.getElementById('pw');
 let mode = 'in';
@@ -87,10 +78,6 @@ function show(type, text){ msg.className = type; msg.textContent = text; }
 
 form.addEventListener('submit', async e => {
   e.preventDefault();
-  if (!sb) {
-    show('err', 'Gagal terhubung ke server. Cek file config.js.');
-    return;
-  }
   go.disabled = true; msg.className = '';
   const email = document.getElementById('email').value.trim();
   const password = pw.value;
@@ -100,7 +87,7 @@ form.addEventListener('submit', async e => {
       if (error) throw error;
       location.href = 'chat.html';
     } else {
-      const { data, error } = await sb.auth.signUp({ email, password });
+      const { data, error } = await sb.auth.signUp({ email, password, options: { emailRedirectTo: location.origin + '/chat.html' } });
       if (error) throw error;
       if (data.session) location.href = 'chat.html';
       else show('ok', 'Akun dibuat. Cek email-mu untuk konfirmasi, lalu masuk.');
@@ -111,14 +98,12 @@ form.addEventListener('submit', async e => {
     else if (t.includes('already')) show('err', 'Email ini sudah terdaftar. Coba masuk.');
     else if (t.includes('password')) show('err', 'Kata sandi minimal 6 karakter.');
     else if (t.includes('confirm')) show('err', 'Email belum dikonfirmasi. Cek kotak masukmu.');
-    else show('err', 'Gagal: ' + (err.message || 'Coba lagi sebentar lagi.'));
+    else show('err', 'Gagal. Coba lagi sebentar lagi.');
   }
   go.disabled = false;
 });
 
-if (sb) {
-  sb.auth.getSession().then(({ data }) => { if (data && data.session) location.href = 'chat.html'; });
-}
+sb.auth.getSession().then(({ data }) => { if (data.session) location.href = 'chat.html'; });
 </script>
 </body>
 </html>
